@@ -97,11 +97,32 @@ int main() {
                      * TODO: define a path made up of (x,y) points that the car will visit
                      *   sequentially every .02 seconds
                      */
-                    double d = 6;
-                    double dist_inc = 0.5;
+                    const double D = 6; // center lane
+                    const double MAX_SPEED = 22;
+                    const double MAX_ACCELERATION = 10;
+                    const double MAX_JERK = 10;
+                    const double DELTA_T = 0.02;
+                    const double DELTA_T_2 = DELTA_T * DELTA_T;
+
+                    double pos_s = car_s;
+                    double speed = car_speed;
+                    double acceleration = MAX_JERK * DELTA_T;
+
                     for (int i = 0; i < 50; ++i) {
-                        auto next_s = car_s + dist_inc*(i+1);
-                        auto xy = getXY(next_s, d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                        pos_s += speed * DELTA_T + 0.5 * acceleration * DELTA_T_2;
+                        speed += acceleration * DELTA_T;
+                        acceleration += MAX_JERK * DELTA_T;
+
+                        if (acceleration > MAX_ACCELERATION) {
+                            acceleration = MAX_ACCELERATION;
+                        }
+
+                        if (speed > MAX_SPEED) {
+                            speed = MAX_SPEED;
+                            acceleration = 0;
+                        }
+
+                        auto xy = getXY(pos_s, D, map_waypoints_s, map_waypoints_x, map_waypoints_y);
                         next_x_vals.push_back(xy[0]);
                         next_y_vals.push_back(xy[1]);
                     }
