@@ -18,6 +18,8 @@ vector<double> transformVehicle2World(double x_vehicle, double y_vehicle, double
 
 vector<double> transformWorld2Vehicle(double x_world, double y_world, double ref_yaw, double ref_x, double ref_y);
 
+double mph2mps(double mph);
+
 using nlohmann::json;
 using std::string;
 using std::vector;
@@ -137,43 +139,39 @@ int main() {
                         }
                     }
 
+                    const double MAX_SPEED = 49.5; // mph
+                    const double DELTA_VELOCITY = 0.224; // TODO: const --> around 5/m/s/s, establish relationship to max acc and jerk
                     if (too_close) {  // TODO: move to path creation loop
-                        ref_velocity -= 0.224; // TODO: const --> around 5/m/s/s, establish relationship to max acc and jerk
-                    } else if (ref_velocity < 49.5) {
-                        ref_velocity += 0.224;
+                        ref_velocity -= DELTA_VELOCITY;
+                    } else if (ref_velocity < MAX_SPEED) {
+                        ref_velocity += DELTA_VELOCITY;
                     }
 
 
                     vector<double> ptsx;
                     vector<double> ptsy;
 
-                    double ref_x = car_x;
-                    double ref_y = car_y;
                     double ref_yaw = deg2rad(car_yaw);
 
+                    double ref_x;
+                    double ref_y;
+                    double ref_x_prev;
+                    double ref_y_prev;
                     if (prev_size < 2) {
-                        double prev_car_x = car_x - cos(car_yaw);
-                        double prev_car_y = car_y - sin(car_yaw);
-
-                        ptsx.push_back(prev_car_x);
-                        ptsx.push_back(car_x); // TODO: ref_x
-
-                        ptsy.push_back(prev_car_y);
-                        ptsy.push_back(car_y);
+                        ref_x = car_x;
+                        ref_y = car_y;
+                        ref_x_prev = car_x - cos(car_yaw);
+                        ref_y_prev = car_y - sin(car_yaw);
                     } else {
                         ref_x = previous_path_x[prev_size - 1];
                         ref_y = previous_path_y[prev_size - 1];
-
-                        double ref_x_prev = previous_path_x[prev_size - 2];
-                        double ref_y_prev = previous_path_y[prev_size - 2];
-
-                        ptsx.push_back(ref_x_prev);
-                        ptsx.push_back(ref_x);
-
-                        ptsy.push_back(ref_y_prev);
-                        ptsy.push_back(ref_y);
+                        ref_x_prev = previous_path_x[prev_size - 2];
+                        ref_y_prev = previous_path_y[prev_size - 2];
                     }
-
+                    ptsx.push_back(ref_x_prev);
+                    ptsy.push_back(ref_y_prev);
+                    ptsx.push_back(ref_x);
+                    ptsy.push_back(ref_y);
 
                     vector<double> next_wp0 = getXY(car_s + 30, dLaneCenter(ego_lane_id), map_waypoints_s,
                                                     map_waypoints_x, map_waypoints_y);
@@ -192,9 +190,9 @@ int main() {
 
                     // transformation to car coordinate system
                     for (int i = 0; i < ptsx.size(); i++) {
-                        vector<double> xy = transformWorld2Vehicle(ptsx[i], ptsy[i], ref_yaw, ref_x, ref_y);
-                        ptsx[i] = xy[0];
-                        ptsy[i] = xy[1];
+                        vector<double> xy_vehicle = transformWorld2Vehicle(ptsx[i], ptsy[i], ref_yaw, ref_x, ref_y);
+                        ptsx[i] = xy_vehicle[0];
+                        ptsy[i] = xy_vehicle[1];
                     }
 
                     // start with points left from previous path
@@ -211,20 +209,16 @@ int main() {
                     double target_y = spl(target_x);
                     double target_distance = sqrt(target_x * target_x + target_y * target_y);
 
-                    double x_add_on = 0;
-                    double N = target_distance / (DELTA_T * ref_velocity / 2.24);  // TODO: use consts
-                    for (int i = 1; i <= 50 - previous_path_x.size(); i++) { // TODO: why 1?
-                        double x_point = x_add_on + target_x / N;
-                        double y_point = spl(x_point);
+                    double x_vehicle = 0;
+                    double N = target_distance / (DELTA_T * mph2mps(ref_velocity));
+                    for (int i = 0; i < 50 - previous_path_x.size(); i++) {
+                        x_vehicle += target_x / N;
+                        double y_vehicle = spl(x_vehicle);
 
-                        x_add_on = x_point; // TODO: simplify
-                        double x_ref = x_point;
-                        double y_ref = y_point;
+                        vector<double> xy_world = transformVehicle2World(x_vehicle, y_vehicle, ref_yaw, ref_x, ref_y);
 
-                        vector<double> xy = transformVehicle2World(x_ref, y_ref, ref_yaw, ref_x, ref_y);
-
-                        next_x_vals.push_back(xy[0]);
-                        next_y_vals.push_back(xy[1]);
+                        next_x_vals.push_back(xy_world[0]);
+                        next_y_vals.push_back(xy_world[1]);
                     }
 
 /*                  const double D = 6; // center lane
@@ -317,4 +311,8 @@ int dLaneCenter(int lane_id) {
 
 bool isInLane(float object_d, int lane_id) {
     return (object_d < dLaneCenter(lane_id) + 2) && (object_d > dLaneCenter(lane_id) - 2);
+}
+
+double mph2mps(double mph) {
+    return mph / 2.24;
 }
