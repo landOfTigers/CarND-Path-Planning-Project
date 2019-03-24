@@ -106,7 +106,7 @@ int main() {
                     int prev_size = previous_path_x.size();
                     const int EGO_LANE_ID = 1;
                     const double DELTA_T = 0.02;
-                    double ref_velocity = 49.5; // mph
+                    double ref_velocity = 0.0; // mph
 
                     if (prev_size > 0) {
                         car_s = end_path_s;
@@ -126,9 +126,16 @@ int main() {
                                            check_speed;  // TODO: Isn't this type cast unnecessary?
 
                             if (check_car_s > car_s && check_car_s - car_s < 30) {
-                                ref_velocity = 29.5;
+                                too_close = true;
+                                // ref_velocity = 29.5;  // TODO: use object's velocity
                             }
                         }
+                    }
+
+                    if (too_close) {  // TODO: move to path creation loop
+                        ref_velocity -= 0.224; // TODO: const --> around 5/m/s/s, establish relationship to max acc and jerk
+                    } else if (ref_velocity < 49.5) {
+                        ref_velocity += 0.0224;
                     }
 
 
