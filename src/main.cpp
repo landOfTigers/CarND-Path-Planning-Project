@@ -55,10 +55,13 @@ int main() {
         map_waypoints_dy.push_back(d_y);
     }
 
-    h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
+    double ref_velocity = 0.0; // mph
+    const int EGO_LANE_ID = 1;
+    const double DELTA_T = 0.02;
+
+    h.onMessage([&ref_velocity, &EGO_LANE_ID, &DELTA_T, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                         &map_waypoints_dx, &map_waypoints_dy]
-                        (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-                         uWS::OpCode opCode) {
+                        (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
         // "42" at the start of the message means there's a websocket message event.
         // The 4 signifies a websocket message
         // The 2 signifies a websocket event
@@ -104,9 +107,6 @@ int main() {
                      */
 
                     int prev_size = previous_path_x.size();
-                    const int EGO_LANE_ID = 1;
-                    const double DELTA_T = 0.02;
-                    double ref_velocity = 0.0; // mph
 
                     if (prev_size > 0) {
                         car_s = end_path_s;
@@ -135,7 +135,7 @@ int main() {
                     if (too_close) {  // TODO: move to path creation loop
                         ref_velocity -= 0.224; // TODO: const --> around 5/m/s/s, establish relationship to max acc and jerk
                     } else if (ref_velocity < 49.5) {
-                        ref_velocity += 0.0224;
+                        ref_velocity += 0.224;
                     }
 
 
