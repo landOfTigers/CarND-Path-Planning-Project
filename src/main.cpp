@@ -202,7 +202,7 @@ int main() {
 
                     double x_vehicle = 0;
                     const double MAX_SPEED = 49.5; // mph
-                    const double DELTA_VELOCITY = 0.224; // TODO: const --> around 5/m/s/s, establish relationship to max acc and jerk
+                    const double DELTA_VELOCITY = 0.224; // corresponds to acceleration of around 5/m/s/s
                     for (int i = 0; i < 50 - previous_path_x.size(); i++) {
                         if (too_close) {
                             ref_velocity -= DELTA_VELOCITY;
@@ -218,36 +218,6 @@ int main() {
                         next_x_vals.push_back(xy_world[0]);
                         next_y_vals.push_back(xy_world[1]);
                     }
-
-/*                  const double D = 6; // center lane
-                    const double MAX_SPEED = 22; // m/s
-                    const double MAX_ACCELERATION = 10;
-                    const double MAX_JERK = 10;
-                    const double DELTA_T_2 = DELTA_T * DELTA_T;
-
-                    double pos_s = car_s;
-                    double speed = car_speed;
-                    double acceleration = MAX_JERK * DELTA_T;
-
-                    for (int i = 0; i < 50; ++i) {
-                        pos_s += speed * DELTA_T + 0.5 * acceleration * DELTA_T_2;
-                        speed += acceleration * DELTA_T;
-                        acceleration += MAX_JERK * DELTA_T;
-
-                        if (acceleration > MAX_ACCELERATION) {
-                            acceleration = MAX_ACCELERATION;
-                        }
-
-                        if (speed > MAX_SPEED) {
-                            speed = MAX_SPEED;
-                            acceleration = 0;
-                        }
-
-                        auto xy = getXY(pos_s, D, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-                        next_x_vals.push_back(xy[0]);
-                        next_y_vals.push_back(xy[1]);
-                    }
-                    */
 
                     msgJson["next_x"] = next_x_vals;
                     msgJson["next_y"] = next_y_vals;
