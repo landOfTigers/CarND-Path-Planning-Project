@@ -139,15 +139,6 @@ int main() {
                         }
                     }
 
-                    const double MAX_SPEED = 49.5; // mph
-                    const double DELTA_VELOCITY = 0.224; // TODO: const --> around 5/m/s/s, establish relationship to max acc and jerk
-                    if (too_close) {  // TODO: move to path creation loop
-                        ref_velocity -= DELTA_VELOCITY;
-                    } else if (ref_velocity < MAX_SPEED) {
-                        ref_velocity += DELTA_VELOCITY;
-                    }
-
-
                     vector<double> ptsx;
                     vector<double> ptsy;
 
@@ -210,9 +201,16 @@ int main() {
                     double target_distance = sqrt(target_x * target_x + target_y * target_y);
 
                     double x_vehicle = 0;
-                    double N = target_distance / (DELTA_T * mph2mps(ref_velocity));
+                    const double MAX_SPEED = 49.5; // mph
+                    const double DELTA_VELOCITY = 0.224; // TODO: const --> around 5/m/s/s, establish relationship to max acc and jerk
                     for (int i = 0; i < 50 - previous_path_x.size(); i++) {
-                        x_vehicle += target_x / N;
+                        if (too_close) {
+                            ref_velocity -= DELTA_VELOCITY;
+                        } else if (ref_velocity < MAX_SPEED) {
+                            ref_velocity += DELTA_VELOCITY;
+                        }
+                        double x_increment = target_x * mph2mps(ref_velocity) * DELTA_T / target_distance;
+                        x_vehicle += x_increment;
                         double y_vehicle = spl(x_vehicle);
 
                         vector<double> xy_world = transformVehicle2World(x_vehicle, y_vehicle, ref_yaw, ref_x, ref_y);
