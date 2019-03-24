@@ -14,6 +14,10 @@ int dLaneCenter(int lane_id);
 
 bool isInLane(float object_d, int lane_id);
 
+vector<double> transformVehicle2World(double x_vehicle, double y_vehicle, double ref_yaw, double ref_x, double ref_y);
+
+vector<double> transformWorld2Vehicle(double x_world, double y_world, double ref_yaw, double ref_x, double ref_y);
+
 using nlohmann::json;
 using std::string;
 using std::vector;
@@ -190,10 +194,9 @@ int main() {
 
                     // transformation to car coordinate system
                     for (int i = 0; i < ptsx.size(); i++) {
-                        double shift_x = ptsx[i] - ref_x;
-                        double shift_y = ptsy[i] - ref_y;
-                        ptsx[i] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
-                        ptsy[i] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
+                        vector<double> xy = transformWorld2Vehicle(ptsx[i], ptsy[i], ref_yaw, ref_x, ref_y);
+                        ptsx[i] = xy[0];
+                        ptsy[i] = xy[1];
                     }
 
                     // start with points left from previous path
@@ -220,14 +223,10 @@ int main() {
                         double x_ref = x_point;
                         double y_ref = y_point;
 
-                        // transform back to world coordinates
-                        x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);
-                        y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);
-                        x_point += ref_x;
-                        y_point += ref_y;
+                        vector<double> xy = transformVehicle2World(x_ref, y_ref, ref_yaw, ref_x, ref_y);
 
-                        next_x_vals.push_back(x_point);
-                        next_y_vals.push_back(y_point);
+                        next_x_vals.push_back(xy[0]);
+                        next_y_vals.push_back(xy[1]);
                     }
 
 /*                  const double D = 6; // center lane
@@ -296,7 +295,27 @@ int main() {
     h.run();
 }
 
-int dLaneCenter(int lane_id) { return 2 + 4 * lane_id; }
+vector<double> transformVehicle2World(double x_vehicle, double y_vehicle, double ref_yaw, double ref_x, double ref_y) {
+    vector<double> xy_world;
+    double x_world = x_vehicle * cos(ref_yaw) - y_vehicle * sin(ref_yaw);
+    double y_world = x_vehicle * sin(ref_yaw) + y_vehicle * cos(ref_yaw);
+    x_world += ref_x;
+    y_world += ref_y;
+    return {x_world, y_world};
+}
+
+vector<double> transformWorld2Vehicle(double x_world, double y_world, double ref_yaw, double ref_x, double ref_y) {
+    double shift_x = x_world - ref_x;
+    double shift_y = y_world - ref_y;
+    double x_vehicle = shift_x * cos(ref_yaw) + shift_y * sin(ref_yaw);
+    double y_vehicle = -shift_x * sin(ref_yaw) + shift_y * cos(ref_yaw);
+    return {x_vehicle, y_vehicle};
+}
+
+
+int dLaneCenter(int lane_id) {
+    return 2 + 4 * lane_id;
+}
 
 bool isInLane(float object_d, int lane_id) {
     return (object_d < dLaneCenter(lane_id) + 2) && (object_d > dLaneCenter(lane_id) - 2);
