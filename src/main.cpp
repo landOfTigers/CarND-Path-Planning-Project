@@ -118,13 +118,13 @@ int main() {
 
                     bool too_close = false;
 
-                    for (int i = 0; i < sensor_fusion.size(); i++) { // TODO: for each loop
-                        float object_d = sensor_fusion[i][6]; // TODO: use consts
+                    for (auto &detected_object : sensor_fusion) {
+                        float object_d = detected_object[6];
                         if (isInLane(object_d, ego_lane_id)) {
-                            float vx = sensor_fusion[i][3];
-                            float vy = sensor_fusion[i][4];
+                            float vx = detected_object[3];
+                            float vy = detected_object[4];
                             double check_speed = sqrt(vx * vx + vy * vy);
-                            double check_car_s = sensor_fusion[i][5];
+                            double check_car_s = detected_object[5];
 
                             check_car_s += (double) prev_size * DELTA_T *
                                            check_speed;  // TODO: Isn't this type cast unnecessary?
