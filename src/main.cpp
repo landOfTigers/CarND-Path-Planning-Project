@@ -123,15 +123,13 @@ int main() {
                         if (isInLane(object_d, ego_lane_id)) {
                             float vx = detected_object[3];
                             float vy = detected_object[4];
-                            double check_speed = sqrt(vx * vx + vy * vy);
-                            double check_car_s = detected_object[5];
+                            double object_speed = sqrt(vx * vx + vy * vy);
+                            double object_s = detected_object[5];
 
-                            check_car_s += (double) prev_size * DELTA_T *
-                                           check_speed;  // TODO: Isn't this type cast unnecessary?
+                            object_s += prev_size * DELTA_T * object_speed;
 
-                            if (check_car_s > car_s && check_car_s - car_s < 30) {
+                            if (object_s > car_s && object_s - car_s < 30) {
                                 too_close = true;
-                                // ref_velocity = 29.5;  // TODO: use object's velocity
                                 if (ego_lane_id > 0) {
                                     ego_lane_id = 0;
                                 }
