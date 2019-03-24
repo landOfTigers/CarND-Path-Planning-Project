@@ -12,6 +12,8 @@
 // for convenience
 int dLaneCenter(int lane_id);
 
+bool isInLane(float object_d, int lane_id);
+
 using nlohmann::json;
 using std::string;
 using std::vector;
@@ -101,17 +103,41 @@ int main() {
                      *   sequentially every .02 seconds
                      */
 
+                    int prev_size = previous_path_x.size();
+                    const int EGO_LANE_ID = 1;
+                    const double DELTA_T = 0.02;
+                    double ref_velocity = 49.5; // mph
+
+                    if (prev_size > 0) {
+                        car_s = end_path_s;
+                    }
+
+                    bool too_close = false;
+
+                    for (int i = 0; i < sensor_fusion.size(); i++) { // TODO: for each loop
+                        float object_d = sensor_fusion[i][6]; // TODO: use consts
+                        if (isInLane(object_d, EGO_LANE_ID)) {
+                            float vx = sensor_fusion[i][3];
+                            float vy = sensor_fusion[i][4];
+                            double check_speed = sqrt(vx * vx + vy * vy);
+                            double check_car_s = sensor_fusion[i][5];
+
+                            check_car_s += (double) prev_size * DELTA_T *
+                                           check_speed;  // TODO: Isn't this type cast unnecessary?
+
+                            if (check_car_s > car_s && check_car_s - car_s < 30) {
+                                ref_velocity = 29.5;
+                            }
+                        }
+                    }
+
+
                     vector<double> ptsx;
                     vector<double> ptsy;
-
-                    int lane_id = 1;
-                    double ref_velocity = 49.5; // miles/h
 
                     double ref_x = car_x;
                     double ref_y = car_y;
                     double ref_yaw = deg2rad(car_yaw);
-
-                    int prev_size = previous_path_x.size();
 
                     if (prev_size < 2) {
                         double prev_car_x = car_x - cos(car_yaw);
@@ -137,11 +163,14 @@ int main() {
                     }
 
 
-                    vector<double> next_wp0 = getXY(car_s + 30, dLaneCenter(lane_id), map_waypoints_s, map_waypoints_x,
+                    vector<double> next_wp0 = getXY(car_s + 30, dLaneCenter(EGO_LANE_ID), map_waypoints_s,
+                                                    map_waypoints_x,
                                                     map_waypoints_y);
-                    vector<double> next_wp1 = getXY(car_s + 60, dLaneCenter(lane_id), map_waypoints_s, map_waypoints_x,
+                    vector<double> next_wp1 = getXY(car_s + 60, dLaneCenter(EGO_LANE_ID), map_waypoints_s,
+                                                    map_waypoints_x,
                                                     map_waypoints_y);
-                    vector<double> next_wp2 = getXY(car_s + 90, dLaneCenter(lane_id), map_waypoints_s, map_waypoints_x,
+                    vector<double> next_wp2 = getXY(car_s + 90, dLaneCenter(EGO_LANE_ID), map_waypoints_s,
+                                                    map_waypoints_x,
                                                     map_waypoints_y);
 
                     ptsx.push_back(next_wp0[0]);
@@ -156,13 +185,9 @@ int main() {
                     for (int i = 0; i < ptsx.size(); i++) {
                         double shift_x = ptsx[i] - ref_x;
                         double shift_y = ptsy[i] - ref_y;
-                        ptsx[i] = shift_x * cos(0-ref_yaw) - shift_y * sin(0-ref_yaw);
-                        ptsy[i] = shift_x * sin(0-ref_yaw) + shift_y * cos(0-ref_yaw);
+                        ptsx[i] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
+                        ptsy[i] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
                     }
-
-                    // create spline
-                    tk::spline spl;
-                    spl.set_points(ptsx, ptsy);
 
                     // start with points left from previous path
                     for (int i = 0; i < previous_path_x.size(); i++) {
@@ -170,23 +195,25 @@ int main() {
                         next_y_vals.push_back(previous_path_y[i]);
                     }
 
+                    // create spline
+                    tk::spline spl;
+                    spl.set_points(ptsx, ptsy);
+
                     double target_x = 30.0;
                     double target_y = spl(target_x);
                     double target_distance = sqrt(target_x * target_x + target_y * target_y);
 
                     double x_add_on = 0;
-
+                    double N = target_distance / (DELTA_T * ref_velocity / 2.24);  // TODO: use consts
                     for (int i = 1; i <= 50 - previous_path_x.size(); i++) { // TODO: why 1?
-                        double N = target_distance / (0.02*ref_velocity/2.24);  // TODO: use consts
                         double x_point = x_add_on + target_x / N;
                         double y_point = spl(x_point);
 
-                        x_add_on = x_point;
-
+                        x_add_on = x_point; // TODO: simplify
                         double x_ref = x_point;
                         double y_ref = y_point;
 
-                        // transform back to world coordniates
+                        // transform back to world coordinates
                         x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);
                         y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);
                         x_point += ref_x;
@@ -200,7 +227,6 @@ int main() {
                     const double MAX_SPEED = 22; // m/s
                     const double MAX_ACCELERATION = 10;
                     const double MAX_JERK = 10;
-                    const double DELTA_T = 0.02;
                     const double DELTA_T_2 = DELTA_T * DELTA_T;
 
                     double pos_s = car_s;
@@ -264,3 +290,7 @@ int main() {
 }
 
 int dLaneCenter(int lane_id) { return 2 + 4 * lane_id; }
+
+bool isInLane(float object_d, int lane_id) {
+    return (object_d < dLaneCenter(lane_id) + 2) && (object_d > dLaneCenter(lane_id) - 2);
+}
