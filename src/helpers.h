@@ -61,8 +61,7 @@ int ClosestWaypoint(double x, double y, const vector<double> &maps_x,
 }
 
 // Returns next waypoint of the closest waypoint
-int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
-                 const vector<double> &maps_y) {
+int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y) {
     int closestWaypoint = ClosestWaypoint(x, y, maps_x, maps_y);
 
     double map_x = maps_x[closestWaypoint];
@@ -84,9 +83,7 @@ int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
 }
 
 // Transform from Cartesian x,y coordinates to Frenet s,d coordinates
-vector<double> getFrenet(double x, double y, double theta,
-                         const vector<double> &maps_x,
-                         const vector<double> &maps_y) {
+vector<double> getFrenet(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y) {
     int next_wp = NextWaypoint(x, y, theta, maps_x, maps_y);
 
     int prev_wp;
@@ -129,9 +126,8 @@ vector<double> getFrenet(double x, double y, double theta,
 }
 
 // Transform from Frenet s,d coordinates to Cartesian x,y
-vector<double> getXY(double s, double d, const vector<double> &maps_s,
-                     const vector<double> &maps_x,
-                     const vector<double> &maps_y) {
+vector<double>
+getXY(double s, double d, const vector<double> &maps_s, const vector<double> &maps_x, const vector<double> &maps_y) {
     int prev_wp = -1;
 
     while (s > maps_s[prev_wp + 1] && (prev_wp < (int) (maps_s.size() - 1))) {
@@ -154,6 +150,35 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
     double y = seg_y + d * sin(perp_heading);
 
     return {x, y};
+}
+
+vector<double> transformVehicle2World(double x_vehicle, double y_vehicle, double ref_yaw, double ref_x, double ref_y) {
+    vector<double> xy_world;
+    double x_world = x_vehicle * cos(ref_yaw) - y_vehicle * sin(ref_yaw);
+    double y_world = x_vehicle * sin(ref_yaw) + y_vehicle * cos(ref_yaw);
+    x_world += ref_x;
+    y_world += ref_y;
+    return {x_world, y_world};
+}
+
+vector<double> transformWorld2Vehicle(double x_world, double y_world, double ref_yaw, double ref_x, double ref_y) {
+    double shift_x = x_world - ref_x;
+    double shift_y = y_world - ref_y;
+    double x_vehicle = shift_x * cos(ref_yaw) + shift_y * sin(ref_yaw);
+    double y_vehicle = -shift_x * sin(ref_yaw) + shift_y * cos(ref_yaw);
+    return {x_vehicle, y_vehicle};
+}
+
+int dLaneCenter(int lane_id) {
+    return 2 + 4 * lane_id;
+}
+
+bool isInLane(float object_d, int lane_id) {
+    return (object_d < dLaneCenter(lane_id) + 2) && (object_d > dLaneCenter(lane_id) - 2);
+}
+
+double mph2mps(double mph) {
+    return mph / 2.24;
 }
 
 #endif  // HELPERS_H

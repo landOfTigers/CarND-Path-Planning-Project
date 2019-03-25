@@ -9,17 +9,6 @@
 #include "json.hpp"
 #include "spline.h"
 
-// for convenience
-int dLaneCenter(int lane_id);
-
-bool isInLane(float object_d, int lane_id);
-
-vector<double> transformVehicle2World(double x_vehicle, double y_vehicle, double ref_yaw, double ref_x, double ref_y);
-
-vector<double> transformWorld2Vehicle(double x_world, double y_world, double ref_yaw, double ref_x, double ref_y);
-
-double mph2mps(double mph);
-
 using nlohmann::json;
 using std::string;
 using std::vector;
@@ -238,8 +227,7 @@ int main() {
         std::cout << "Connected!!!" << std::endl;
     });
 
-    h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code,
-                           char *message, size_t length) {
+    h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {
         ws.close();
         std::cout << "Disconnected" << std::endl;
     });
@@ -253,34 +241,4 @@ int main() {
     }
 
     h.run();
-}
-
-vector<double> transformVehicle2World(double x_vehicle, double y_vehicle, double ref_yaw, double ref_x, double ref_y) {
-    vector<double> xy_world;
-    double x_world = x_vehicle * cos(ref_yaw) - y_vehicle * sin(ref_yaw);
-    double y_world = x_vehicle * sin(ref_yaw) + y_vehicle * cos(ref_yaw);
-    x_world += ref_x;
-    y_world += ref_y;
-    return {x_world, y_world};
-}
-
-vector<double> transformWorld2Vehicle(double x_world, double y_world, double ref_yaw, double ref_x, double ref_y) {
-    double shift_x = x_world - ref_x;
-    double shift_y = y_world - ref_y;
-    double x_vehicle = shift_x * cos(ref_yaw) + shift_y * sin(ref_yaw);
-    double y_vehicle = -shift_x * sin(ref_yaw) + shift_y * cos(ref_yaw);
-    return {x_vehicle, y_vehicle};
-}
-
-
-int dLaneCenter(int lane_id) {
-    return 2 + 4 * lane_id;
-}
-
-bool isInLane(float object_d, int lane_id) {
-    return (object_d < dLaneCenter(lane_id) + 2) && (object_d > dLaneCenter(lane_id) - 2);
-}
-
-double mph2mps(double mph) {
-    return mph / 2.24;
 }
