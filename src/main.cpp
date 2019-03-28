@@ -203,7 +203,8 @@ int main() {
                     const double MAX_SPEED = 49.5; // mph
                     const double DELTA_VELOCITY = 0.224; // corresponds to acceleration of around 5/m/s/s
                     for (int i = 0; i < 50 - previous_path_x.size(); i++) {
-                        if (too_close && mph2mps(ref_velocity) > object_speed_m_s) {
+                        const bool too_fast = mph2mps(ref_velocity) > object_speed_m_s;
+                        if (too_close && too_fast) {
                             ref_velocity -= DELTA_VELOCITY;
                         } else if (ref_velocity < MAX_SPEED) {
                             ref_velocity += DELTA_VELOCITY;
