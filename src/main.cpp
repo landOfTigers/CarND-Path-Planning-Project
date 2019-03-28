@@ -93,6 +93,7 @@ int main() {
                     auto sensor_fusion = j[1]["sensor_fusion"];
 
                     json msgJson;
+                    double ref_yaw = deg2rad(car_yaw);
 
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
@@ -140,8 +141,6 @@ int main() {
                     vector<double> ptsx;
                     vector<double> ptsy;
 
-                    double ref_yaw = deg2rad(car_yaw);
-
                     double ref_x;
                     double ref_y;
                     double ref_x_prev;
@@ -149,8 +148,8 @@ int main() {
                     if (prev_size < 2) {
                         ref_x = car_x;
                         ref_y = car_y;
-                        ref_x_prev = car_x - cos(car_yaw);
-                        ref_y_prev = car_y - sin(car_yaw);
+                        ref_x_prev = car_x - cos(ref_yaw);
+                        ref_y_prev = car_y - sin(ref_yaw);
                     } else {
                         ref_x = previous_path_x[prev_size - 1];
                         ref_y = previous_path_y[prev_size - 1];
