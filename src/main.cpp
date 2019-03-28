@@ -109,6 +109,7 @@ int main() {
                     }
 
                     bool too_close = false;
+                    double object_speed_m_s = 0;
 
                     for (auto &detected_object : sensor_fusion) {
                         float object_d = detected_object[6];
@@ -116,10 +117,10 @@ int main() {
                         if (getLaneId(object_d) == currentLaneId) {
                             float vx = detected_object[3];
                             float vy = detected_object[4];
-                            double object_speed = sqrt(vx * vx + vy * vy);
+                            object_speed_m_s = sqrt(vx * vx + vy * vy);
                             double object_s = detected_object[5];
 
-                            object_s += prev_size * DELTA_T * object_speed;
+                            object_s += prev_size * DELTA_T * object_speed_m_s;
 
                             too_close = object_s > car_s && object_s - car_s < 30;
 
@@ -202,7 +203,7 @@ int main() {
                     const double MAX_SPEED = 49.5; // mph
                     const double DELTA_VELOCITY = 0.224; // corresponds to acceleration of around 5/m/s/s
                     for (int i = 0; i < 50 - previous_path_x.size(); i++) {
-                        if (too_close) {
+                        if (too_close && mph2mps(ref_velocity) > object_speed_m_s) {
                             ref_velocity -= DELTA_VELOCITY;
                         } else if (ref_velocity < MAX_SPEED) {
                             ref_velocity += DELTA_VELOCITY;
