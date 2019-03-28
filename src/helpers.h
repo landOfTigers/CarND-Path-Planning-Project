@@ -173,8 +173,14 @@ int dLaneCenter(int lane_id) {
     return 2 + 4 * lane_id;
 }
 
-bool isInLane(float object_d, int lane_id) {
+bool isInLane(double object_d, int lane_id) {
     return (object_d < dLaneCenter(lane_id) + 2) && (object_d > dLaneCenter(lane_id) - 2);
+}
+
+int getLaneId(double d) {
+    for (int i = 0; i <= 2; i++) {
+        if (isInLane(d, i)) return i;
+    }
 }
 
 double mph2mps(double mph) {

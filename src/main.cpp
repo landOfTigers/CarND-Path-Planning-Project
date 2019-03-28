@@ -8,6 +8,7 @@
 #include "helpers.h"
 #include "json.hpp"
 #include "spline.h"
+#include "FSM.h"
 
 using nlohmann::json;
 using std::string;
@@ -51,11 +52,11 @@ int main() {
     }
 
     double ref_velocity = 0.0; // mph
-    int ego_lane_id = 1;
+    FSM fsm = FSM();
     const double DELTA_T = 0.02;
 
-    h.onMessage([&ref_velocity, &ego_lane_id, &DELTA_T, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
-                        &map_waypoints_dx, &map_waypoints_dy]
+    h.onMessage([&ref_velocity, &fsm, &DELTA_T, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s, &map_waypoints_dx,
+                        &map_waypoints_dy]
                         (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
         // "42" at the start of the message means there's a websocket message event.
         // The 4 signifies a websocket message
@@ -111,7 +112,8 @@ int main() {
 
                     for (auto &detected_object : sensor_fusion) {
                         float object_d = detected_object[6];
-                        if (isInLane(object_d, ego_lane_id)) {
+                        int currentLaneId = getLaneId(car_d);
+                        if (getLaneId(object_d) == currentLaneId) {
                             float vx = detected_object[3];
                             float vy = detected_object[4];
                             double object_speed = sqrt(vx * vx + vy * vy);
@@ -121,8 +123,10 @@ int main() {
 
                             if (object_s > car_s && object_s - car_s < 30) {
                                 too_close = true;
-                                if (ego_lane_id > 0) {
-                                    ego_lane_id = 0;
+                                if (currentLaneId > 0) {
+                                    fsm.changeLaneLeft(currentLaneId);
+                                } else {
+                                    fsm.keepLane();
                                 }
                             }
                         }
@@ -153,12 +157,14 @@ int main() {
                     ptsx.push_back(ref_x);
                     ptsy.push_back(ref_y);
 
-                    vector<double> next_wp0 = getXY(car_s + 30, dLaneCenter(ego_lane_id), map_waypoints_s,
-                                                    map_waypoints_x, map_waypoints_y);
-                    vector<double> next_wp1 = getXY(car_s + 60, dLaneCenter(ego_lane_id), map_waypoints_s,
-                                                    map_waypoints_x, map_waypoints_y);
-                    vector<double> next_wp2 = getXY(car_s + 90, dLaneCenter(ego_lane_id), map_waypoints_s,
-                                                    map_waypoints_x, map_waypoints_y);
+
+                    double dIntended = dLaneCenter(fsm.getIntendedLaneId());
+                    vector<double> next_wp0 = getXY(car_s + 30, dIntended, map_waypoints_s, map_waypoints_x,
+                                                    map_waypoints_y);
+                    vector<double> next_wp1 = getXY(car_s + 60, dIntended, map_waypoints_s, map_waypoints_x,
+                                                    map_waypoints_y);
+                    vector<double> next_wp2 = getXY(car_s + 90, dIntended, map_waypoints_s, map_waypoints_x,
+                                                    map_waypoints_y);
 
                     ptsx.push_back(next_wp0[0]);
                     ptsx.push_back(next_wp1[0]);
