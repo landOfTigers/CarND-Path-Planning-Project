@@ -54,9 +54,10 @@ int main() {
     double ref_velocity = 0.0; // mph
     FSM fsm = FSM();
     const double DELTA_T = 0.02;
+    const double MAX_SPEED = 49.5; // mph
 
-    h.onMessage([&ref_velocity, &fsm, &DELTA_T, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s, &map_waypoints_dx,
-                        &map_waypoints_dy]
+    h.onMessage([&ref_velocity, &fsm, &DELTA_T, &MAX_SPEED, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
+                        &map_waypoints_dx, &map_waypoints_dy]
                         (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
         // "42" at the start of the message means there's a websocket message event.
         // The 4 signifies a websocket message
@@ -116,29 +117,32 @@ int main() {
                     int egoLaneId = getLaneId(car_d);
                     vector<bool> laneFree = {true, true, true};
 
+                    const double MAX_SPEED_M_S = mph2mps(MAX_SPEED);
+                    vector<double> laneSpeed_m_s = {MAX_SPEED_M_S, MAX_SPEED_M_S, MAX_SPEED_M_S};
+
                     for (auto &detected_object : sensor_fusion) {
 
                         float object_d = detected_object[6];
                         const int objectLaneId = getLaneId(object_d);
 
                         double object_s = (double) detected_object[5] + prev_size * DELTA_T * object_speed_m_s;
+                        float vx = detected_object[3];
+                        float vy = detected_object[4];
+                        object_speed_m_s = sqrt(vx * vx + vy * vy);
 
+                        bool isInFront = object_s > car_s;
                         bool isWithin30Meters = fabs(object_s - car_s) < 30;
 
                         if (isWithin30Meters) {
                             laneFree[objectLaneId] = false;
                         }
 
-                        bool isInFront = object_s > car_s;
+                        if (isInFront && (object_speed_m_s < laneSpeed_m_s[objectLaneId])) {
+                            laneSpeed_m_s[objectLaneId] = object_speed_m_s;
+                        }
 
-                        float vx = detected_object[3];
-                        float vy = detected_object[4];
-                        object_speed_m_s = sqrt(vx * vx + vy * vy);
-
-                        if (objectLaneId == egoLaneId) {
-                            if (isInFront && isWithin30Meters) {
-                                egoLaneBlocked = true;
-                            }
+                        if ((objectLaneId == egoLaneId) && (isInFront && isWithin30Meters)) {
+                            egoLaneBlocked = true;
                         }
                     }
 
@@ -146,9 +150,16 @@ int main() {
                         int right = egoLaneId + 1;
                         int left = egoLaneId - 1;
 
-                        if (right < laneFree.size() && laneFree[right]) {
+                        const bool rightPossible = right < laneFree.size() && laneFree[right];
+                        const bool leftPossible = left >= 0 && laneFree[left];
+
+                        bool leftFaster = laneSpeed_m_s[left] > laneSpeed_m_s[right];
+
+                        if (leftFaster && leftPossible) {
+                            fsm.changeLaneLeft(egoLaneId);
+                        } else if (rightPossible) {
                             fsm.changeLaneRight(egoLaneId);
-                        } else if (laneFree[left]) {
+                        } else if (leftPossible) {
                             fsm.changeLaneLeft(egoLaneId);
                         }
                     }
@@ -215,7 +226,6 @@ int main() {
                     double target_distance = sqrt(target_x * target_x + target_y * target_y);
 
                     double x_vehicle = 0;
-                    const double MAX_SPEED = 49.5; // mph
                     const double DELTA_VELOCITY = 0.224; // corresponds to acceleration of around 5/m/s/s
                     for (int i = 0; i < 50 - previous_path_x.size(); i++) {
                         const bool too_fast = mph2mps(ref_velocity) > object_speed_m_s;
