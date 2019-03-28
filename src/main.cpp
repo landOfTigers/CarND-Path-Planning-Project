@@ -109,33 +109,41 @@ int main() {
                         car_s = end_path_s;
                     }
 
-                    bool too_close = false;
+                    bool egoLaneBlocked = false;
                     double object_speed_m_s = 0;
+                    int egoLaneId = getLaneId(car_d);
+                    vector<bool> lanesBlocked = {false, false, false};
 
                     for (auto &detected_object : sensor_fusion) {
+
                         float object_d = detected_object[6];
-                        int egoLaneId = getLaneId(car_d);
                         const int objectLaneId = getLaneId(object_d);
+
+                        double object_s = (double) detected_object[5] + prev_size * DELTA_T * object_speed_m_s;
+
+                        bool isWithin30Meters = fabs(object_s - car_s) < 30;
+
+                        if (isWithin30Meters) {
+                            lanesBlocked[objectLaneId] = true;
+                        }
+
+                        bool isInFront = object_s > car_s;
+
+                        float vx = detected_object[3];
+                        float vy = detected_object[4];
+                        object_speed_m_s = sqrt(vx * vx + vy * vy);
+
                         if (objectLaneId == egoLaneId) {
-                            float vx = detected_object[3];
-                            float vy = detected_object[4];
-                            object_speed_m_s = sqrt(vx * vx + vy * vy);
-                            double object_s = detected_object[5];
-
-                            object_s += prev_size * DELTA_T * object_speed_m_s;
-
-                            too_close = object_s > car_s && object_s - car_s < 30;
-
-                            if (too_close) {
-                                if (egoLaneId != 0) {
-                                    fsm.changeLaneLeft(egoLaneId);
-                                } else {
-                                    fsm.changeLaneRight(egoLaneId);
-                                }
+                            if (isInFront && isWithin30Meters) {
+                                egoLaneBlocked = true;
                             } else {
-                                fsm.keepLane();
+                                fsm.keepLane(); // TODO: maybe this can be moved
                             }
                         }
+                    }
+
+                    if (egoLaneBlocked) {
+                        // TODO: check blocked lanes
                     }
 
                     vector<double> ptsx;
@@ -204,7 +212,7 @@ int main() {
                     const double DELTA_VELOCITY = 0.224; // corresponds to acceleration of around 5/m/s/s
                     for (int i = 0; i < 50 - previous_path_x.size(); i++) {
                         const bool too_fast = mph2mps(ref_velocity) > object_speed_m_s;
-                        if (too_close && too_fast) {
+                        if (egoLaneBlocked && too_fast) {
                             ref_velocity -= DELTA_VELOCITY;
                         } else if (ref_velocity < MAX_SPEED) {
                             ref_velocity += DELTA_VELOCITY;

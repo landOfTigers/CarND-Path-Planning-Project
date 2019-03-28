@@ -9,11 +9,11 @@ protected:
     int intendedLaneId = 1;
 
 public:
+    virtual void keepLane(FSM *m) {}
+
     virtual void changeLaneLeft(FSM *m, int &currentLaneId) {}
 
     virtual void changeLaneRight(FSM *m, int &currentLaneId) {}
-
-    virtual void keepLane(FSM *m) {}
 
     int getIntendedLaneId() {
         return intendedLaneId;

@@ -1,6 +1,10 @@
 #ifndef PATH_PLANNING_FSM_H
 #define PATH_PLANNING_FSM_H
 
+#include <vector>
+
+using std::vector;
+
 class FSM {
 
 private:
