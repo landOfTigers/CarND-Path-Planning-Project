@@ -10,6 +10,10 @@ void FSM::changeLaneLeft(int &currentLaneId) {
     current->changeLaneLeft(this, currentLaneId);
 }
 
+void FSM::changeLaneRight(int &currentLaneId) {
+    current->changeLaneRight(this, currentLaneId);
+}
+
 void FSM::keepLane() {
     current->keepLane(this);
 }

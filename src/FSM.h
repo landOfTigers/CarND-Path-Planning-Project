@@ -15,6 +15,8 @@ public:
 
     void changeLaneLeft(int &currentLaneId);
 
+    void changeLaneRight(int &currentLaneId);
+
     void keepLane();
 
     int getIntendedLaneId();

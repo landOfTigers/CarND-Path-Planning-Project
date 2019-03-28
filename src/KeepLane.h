@@ -10,6 +10,8 @@ public:
     ~KeepLane() = default;
 
     void changeLaneLeft(FSM *m, int &currentLaneId) override;
+
+    void changeLaneRight(FSM *m, int &currentLaneId) override;
 };
 
 #endif //PATH_PLANNING_OFF_H

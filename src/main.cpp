@@ -121,13 +121,16 @@ int main() {
 
                             object_s += prev_size * DELTA_T * object_speed;
 
-                            if (object_s > car_s && object_s - car_s < 30) {
-                                too_close = true;
-                                if (currentLaneId > 0) {
+                            too_close = object_s > car_s && object_s - car_s < 30;
+
+                            if (too_close) {
+                                if (currentLaneId != 0) {
                                     fsm.changeLaneLeft(currentLaneId);
                                 } else {
-                                    fsm.keepLane();
+                                    fsm.changeLaneRight(currentLaneId);
                                 }
+                            } else {
+                                fsm.keepLane();
                             }
                         }
                     }
