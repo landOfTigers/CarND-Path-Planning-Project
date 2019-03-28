@@ -95,6 +95,8 @@ int main() {
                     json msgJson;
                     double ref_yaw = deg2rad(car_yaw);
 
+                    fsm.keepLane();
+
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
 
@@ -112,7 +114,7 @@ int main() {
                     bool egoLaneBlocked = false;
                     double object_speed_m_s = 0;
                     int egoLaneId = getLaneId(car_d);
-                    vector<bool> lanesBlocked = {false, false, false};
+                    vector<bool> laneFree = {true, true, true};
 
                     for (auto &detected_object : sensor_fusion) {
 
@@ -124,7 +126,7 @@ int main() {
                         bool isWithin30Meters = fabs(object_s - car_s) < 30;
 
                         if (isWithin30Meters) {
-                            lanesBlocked[objectLaneId] = true;
+                            laneFree[objectLaneId] = false;
                         }
 
                         bool isInFront = object_s > car_s;
@@ -136,14 +138,19 @@ int main() {
                         if (objectLaneId == egoLaneId) {
                             if (isInFront && isWithin30Meters) {
                                 egoLaneBlocked = true;
-                            } else {
-                                fsm.keepLane(); // TODO: maybe this can be moved
                             }
                         }
                     }
 
                     if (egoLaneBlocked) {
-                        // TODO: check blocked lanes
+                        int right = egoLaneId + 1;
+                        int left = egoLaneId - 1;
+
+                        if (right < laneFree.size() && laneFree[right]) {
+                            fsm.changeLaneRight(egoLaneId);
+                        } else if (laneFree[left]) {
+                            fsm.changeLaneLeft(egoLaneId);
+                        }
                     }
 
                     vector<double> ptsx;
