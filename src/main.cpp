@@ -113,8 +113,9 @@ int main() {
 
                     for (auto &detected_object : sensor_fusion) {
                         float object_d = detected_object[6];
-                        int currentLaneId = getLaneId(car_d);
-                        if (getLaneId(object_d) == currentLaneId) {
+                        int egoLaneId = getLaneId(car_d);
+                        const int objectLaneId = getLaneId(object_d);
+                        if (objectLaneId == egoLaneId) {
                             float vx = detected_object[3];
                             float vy = detected_object[4];
                             object_speed_m_s = sqrt(vx * vx + vy * vy);
@@ -125,10 +126,10 @@ int main() {
                             too_close = object_s > car_s && object_s - car_s < 30;
 
                             if (too_close) {
-                                if (currentLaneId != 0) {
-                                    fsm.changeLaneLeft(currentLaneId);
+                                if (egoLaneId != 0) {
+                                    fsm.changeLaneLeft(egoLaneId);
                                 } else {
-                                    fsm.changeLaneRight(currentLaneId);
+                                    fsm.changeLaneRight(egoLaneId);
                                 }
                             } else {
                                 fsm.keepLane();
