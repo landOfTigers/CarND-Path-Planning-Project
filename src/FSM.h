@@ -24,6 +24,9 @@ public:
     void keepLane();
 
     int getIntendedLaneId();
+
+    void determineNextState(int &egoLaneId, vector<bool> &laneFree, vector<double> &laneSpeed_m_s,
+                            double max_speed_m_s);
 };
 
 #endif //PATH_PLANNING_FSM_H
