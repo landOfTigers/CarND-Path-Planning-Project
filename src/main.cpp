@@ -150,12 +150,17 @@ int main() {
                         int right = egoLaneId + 1;
                         int left = egoLaneId - 1;
 
+                        long fastestLane =
+                                std::max_element(laneSpeed_m_s.begin(), laneSpeed_m_s.end()) - laneSpeed_m_s.begin();
+
                         const bool rightPossible = right < laneFree.size() && laneFree[right];
                         const bool leftPossible = left >= 0 && laneFree[left];
 
-                        bool leftFaster = laneSpeed_m_s[left] > laneSpeed_m_s[right];
+                        bool leftFasterThanRight = laneSpeed_m_s[left] > laneSpeed_m_s[right];
 
-                        if (leftFaster && leftPossible) {
+                        if (fastestLane == egoLaneId) {
+                            fsm.keepLane();
+                        } else if (leftFasterThanRight && leftPossible) {
                             fsm.changeLaneLeft(egoLaneId);
                         } else if (rightPossible) {
                             fsm.changeLaneRight(egoLaneId);
