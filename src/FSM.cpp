@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "FSM.h"
 #include "KeepLane.h"
 
@@ -22,25 +23,30 @@ int FSM::getIntendedLaneId() {
     return current->getIntendedLaneId();
 }
 
-void FSM::determineNextState(int &egoLaneId, vector<bool> &laneFree, vector<double> &laneSpeed_m_s,
-                             double max_speed_m_s) {
+void FSM::determineNextState(int &egoLaneId, vector<bool> &laneFree, vector<double> &v_lane_m_s, double v_max_m_s) {
     int right = egoLaneId + 1;
     int left = egoLaneId - 1;
     const bool rightPossible = right < laneFree.size() && laneFree[right];
     const bool leftPossible = left >= 0 && laneFree[left];
 
-    const bool egoFastest = laneSpeed_m_s[egoLaneId] == max_speed_m_s;
-    const bool rightFasterThanLeft = laneSpeed_m_s[right] > laneSpeed_m_s[left];
-    const bool leftFasterThanEgo = laneSpeed_m_s[left] > laneSpeed_m_s[egoLaneId];
-    const bool rightFasterThanEgo = laneSpeed_m_s[right] > laneSpeed_m_s[egoLaneId];
+    const bool maxSpeed = v_lane_m_s[egoLaneId] == v_max_m_s;
+    const bool leftFasterThanEgo = v_lane_m_s[left] > v_lane_m_s[egoLaneId];
+    const bool rightFasterThanEgo = v_lane_m_s[right] > v_lane_m_s[egoLaneId];
 
-    if (egoFastest) {
+    long fastestLane = std::max_element(v_lane_m_s.begin(), v_lane_m_s.end()) - v_lane_m_s.begin();
+
+    bool fastestLaneRight = fastestLane - egoLaneId > 0;
+    bool fastestLaneLeft = fastestLane - egoLaneId < 0;
+
+    if (maxSpeed) {
         this->keepLane();
-    } else if (rightFasterThanLeft && rightPossible) {
+    } else if (fastestLaneRight && rightPossible) {
         this->changeLaneRight(egoLaneId);
-    } else if (leftFasterThanEgo && leftPossible) {
+    } else if (fastestLaneLeft && leftPossible) {
         this->changeLaneLeft(egoLaneId);
     } else if (rightFasterThanEgo && rightPossible) {
         this->changeLaneRight(egoLaneId);
+    } else if (leftFasterThanEgo && leftPossible) {
+        this->changeLaneLeft(egoLaneId);
     }
 }

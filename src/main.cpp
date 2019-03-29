@@ -132,12 +132,13 @@ int main() {
 
                         bool isInFront = object_s > car_s;
                         bool isWithin30Meters = fabs(object_s - car_s) < 30;
+                        bool isWithin50Meters = fabs(object_s - car_s) < 50;
 
                         if (isWithin30Meters) {
                             laneFree[objectLaneId] = false;
                         }
 
-                        if (isInFront && (object_speed_m_s < laneSpeed_m_s[objectLaneId])) {
+                        if (isInFront && isWithin50Meters && (object_speed_m_s < laneSpeed_m_s[objectLaneId])) {
                             laneSpeed_m_s[objectLaneId] = object_speed_m_s;
                         }
 
