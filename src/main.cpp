@@ -58,7 +58,7 @@ int main() {
 
     h.onMessage([&ref_velocity, &fsm, &DELTA_T, &MAX_SPEED, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                         &map_waypoints_dx, &map_waypoints_dy]
-                        (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+                        (uWS::WebSocket <uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
         // "42" at the start of the message means there's a websocket message event.
         // The 4 signifies a websocket message
         // The 2 signifies a websocket event
@@ -113,7 +113,7 @@ int main() {
                     }
 
                     bool egoLaneBlocked = false;
-                    double object_speed_m_s = 0;
+                    double object_speed_blocking = 0;
                     int egoLaneId = getLaneId(car_d);
                     vector<bool> laneFree = {true, true, true};
 
@@ -125,10 +125,10 @@ int main() {
                         float object_d = detected_object[6];
                         const int objectLaneId = getLaneId(object_d);
 
-                        double object_s = (double) detected_object[5] + prev_size * DELTA_T * object_speed_m_s;
                         float vx = detected_object[3];
                         float vy = detected_object[4];
-                        object_speed_m_s = sqrt(vx * vx + vy * vy);
+                        double object_speed_m_s = sqrt(vx * vx + vy * vy);
+                        double object_s = (double) detected_object[5] + prev_size * DELTA_T * object_speed_m_s;
 
                         bool isInFront = object_s > car_s;
                         bool isWithin30Meters = fabs(object_s - car_s) < 30;
@@ -143,6 +143,7 @@ int main() {
                         }
 
                         if ((objectLaneId == egoLaneId) && (isInFront && isWithin30Meters)) {
+                            object_speed_blocking = object_speed_m_s;
                             egoLaneBlocked = true;
                         }
                     }
@@ -213,7 +214,7 @@ int main() {
                     double x_vehicle = 0;
                     const double DELTA_VELOCITY = 0.224; // corresponds to acceleration of around 5/m/s/s
                     for (int i = 0; i < 50 - previous_path_x.size(); i++) {
-                        const bool too_fast = mph2mps(ref_velocity) > object_speed_m_s;
+                        const bool too_fast = mph2mps(ref_velocity) > object_speed_blocking;
                         if (egoLaneBlocked && too_fast) {
                             ref_velocity -= DELTA_VELOCITY;
                         } else if (ref_velocity < MAX_SPEED) {
@@ -244,11 +245,11 @@ int main() {
         }  // end websocket if
     }); // end h.onMessage
 
-    h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
+    h.onConnection([&h](uWS::WebSocket <uWS::SERVER> ws, uWS::HttpRequest req) {
         std::cout << "Connected!!!" << std::endl;
     });
 
-    h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {
+    h.onDisconnection([&h](uWS::WebSocket <uWS::SERVER> ws, int code, char *message, size_t length) {
         ws.close();
         std::cout << "Disconnected" << std::endl;
     });
