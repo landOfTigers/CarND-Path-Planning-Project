@@ -122,13 +122,13 @@ int main() {
 
                         const bool isInFront = object_s > ref_s;
                         const bool isWithin30Meters = fabs(object_s - ref_s) < 30;
-                        const bool isWithin50Meters = fabs(object_s - ref_s) < 50;
+                        const bool isWithin40Meters = fabs(object_s - ref_s) < 40;
 
                         if (isWithin30Meters) {
                             laneFree[objectLaneId] = false;
                         }
 
-                        if (isInFront && isWithin50Meters && (object_speed_m_s < laneSpeed_m_s[objectLaneId])) {
+                        if (isInFront && isWithin40Meters && (object_speed_m_s < laneSpeed_m_s[objectLaneId])) {
                             laneSpeed_m_s[objectLaneId] = object_speed_m_s;
                         }
 
