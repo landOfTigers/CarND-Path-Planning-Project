@@ -49,11 +49,9 @@ int main() {
 
   double ref_velocity = 0.0; // mph
   FSM fsm = FSM();
-  const double DELTA_T = 0.02;
-  const double MAX_SPEED = 49.5; // mph
 
-  h.onMessage([&ref_velocity, &fsm, &DELTA_T, &MAX_SPEED, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
-                  &map_waypoints_dx, &map_waypoints_dy]
+  h.onMessage([&ref_velocity, &fsm, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s, &map_waypoints_dx,
+                  &map_waypoints_dy]
                   (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -91,11 +89,22 @@ int main() {
 
           json msgJson;
 
-          double ref_yaw = deg2rad(car_yaw);
-          double ref_s = car_s;
+          //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+          //                                          PATH PLANNER                                                    //
+          //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+          const double DELTA_T = 0.02;
+          const double MAX_SPEED = 49.5; // mph
+
+          // transition to default state after each maneuver
           fsm.keepLane();
 
+
+          //////////////////////////////////////////
+          // DETERMINE LANE STATUS AND NEXT STATE //
+          //////////////////////////////////////////
+
+          double ref_s = car_s;
           int prev_size = previous_path_x.size();
 
           if (prev_size > 0) {
@@ -106,10 +115,8 @@ int main() {
           double object_speed_blocking = 0;
           int egoLaneId = getLaneId(car_d);
           vector<bool> laneFree = {true, true, true};
-
           const double MAX_SPEED_M_S = mph2mps(MAX_SPEED);
           vector<double> laneSpeed_m_s = {MAX_SPEED_M_S, MAX_SPEED_M_S, MAX_SPEED_M_S};
-
           for (const auto &detected_object : sensor_fusion) {
 
             const float object_d = detected_object[6];
@@ -139,6 +146,13 @@ int main() {
           }
 
           fsm.determineNextState(egoLaneId, laneFree, laneSpeed_m_s, MAX_SPEED_M_S);
+
+
+          ///////////////////
+          // GENERATE PATH //
+          ///////////////////
+
+          double ref_yaw = deg2rad(car_yaw);
 
           vector<double> ptsx;
           vector<double> ptsy;
@@ -187,12 +201,18 @@ int main() {
           tk::spline spl;
           spl.set_points(ptsx, ptsy);
 
+
+          /////////////////////////
+          // GENERATE TRAJECTORY //
+          /////////////////////////
+
           double target_x = 30.0;
           double target_y = spl(target_x);
           double target_distance = sqrt(target_x * target_x + target_y * target_y);
 
           vector<double> next_x_vals;
           vector<double> next_y_vals;
+
           // start with points left from previous path
           for (int i = 0; i < previous_path_x.size(); i++) {
             next_x_vals.push_back(previous_path_x[i]);

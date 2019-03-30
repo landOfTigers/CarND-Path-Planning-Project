@@ -143,3 +143,24 @@ still be compilable with cmake and make./
 ## How to write a README
 A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
 
+
+## Model Documentation
+
+### State Machine
+
+The high level behavior of the path planner is modeled in a state machine. It has three states: KeepLane, ChangeLaneLeft and ChangeLaneRight, which are modeled in classes that inherit from the State class.
+Each of these states sets the trajectory's target d value to the corresponding value when the object is initialized: the center of the ego lane, the left lane, or the right lane.
+The decision of which state to transition to while driving is made in the FSM class's method "determineNextState":
+We stay in the ego lane if we can still go at the maximum allowed speed there.
+Otherwise, we check which lane is the fastest and whether a change to that lane is safe, meaning no other car in that lane travels within 30 meters to our front and back.
+If we cannot change to the fastest lane, we check if the other lane is still faster than our's and change to that lane if it is safe.
+
+
+### Generating Trajectories
+
+For generating paths I use two anchor points, which are the current and previous waypoints of the ego vehicle, to not have a sudden change in the yaw.
+I then add three waypoints at s=30, s=60 and s=90 and the d value of the target lane from the current maneuver in the Frenet coordinate system (lines 150-173 in main.cpp).
+A smooth path is generated from these waypoints by using the spline library.
+
+The trajectory is generated from the path by choosing 50 points at a distance that correspond to the desired velocity,
+which may change during the iteration, depending on the traffic situation in the ego lane (lines 190-221).
