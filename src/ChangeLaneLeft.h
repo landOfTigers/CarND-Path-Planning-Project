@@ -4,15 +4,15 @@
 #include "State.h"
 
 class ChangeLaneLeft : public State {
-public:
+ public:
 
-    explicit ChangeLaneLeft(int &currentLaneId) {
-        this->intendedLaneId = currentLaneId - 1;
-    };
+  explicit ChangeLaneLeft(int &currentLaneId) {
+    this->intendedLaneId = currentLaneId - 1;
+  };
 
-    ~ChangeLaneLeft() = default;;
+  ~ChangeLaneLeft() = default;;
 
-    void keepLane(FSM *m) override;
+  void keepLane(FSM *m) override;
 };
 
 #endif //PATH_PLANNING_ON_H

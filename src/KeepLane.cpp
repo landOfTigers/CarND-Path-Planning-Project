@@ -3,15 +3,15 @@
 #include "ChangeLaneRight.h"
 
 KeepLane::KeepLane(int &intendedLaneId) {
-    this->intendedLaneId = intendedLaneId;
+  this->intendedLaneId = intendedLaneId;
 }
 
 void KeepLane::changeLaneLeft(FSM *m, int &currentLaneId) {
-    m->setCurrent(new ChangeLaneLeft(currentLaneId));
-    delete this;
+  m->setCurrent(new ChangeLaneLeft(currentLaneId));
+  delete this;
 }
 
 void KeepLane::changeLaneRight(FSM *m, int &currentLaneId) {
-    m->setCurrent(new ChangeLaneRight(currentLaneId));
-    delete this;
+  m->setCurrent(new ChangeLaneRight(currentLaneId));
+  delete this;
 }

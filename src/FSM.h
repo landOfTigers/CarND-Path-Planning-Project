@@ -7,25 +7,25 @@ using std::vector;
 
 class FSM {
 
-private:
-    class State *current;
+ private:
+  class State *current;
 
-public:
-    FSM();
+ public:
+  FSM();
 
-    void setCurrent(State *s) {
-        current = s;
-    }
+  void setCurrent(State *s) {
+    current = s;
+  }
 
-    void changeLaneLeft(int &currentLaneId);
+  void changeLaneLeft(int &currentLaneId);
 
-    void changeLaneRight(int &currentLaneId);
+  void changeLaneRight(int &currentLaneId);
 
-    void keepLane();
+  void keepLane();
 
-    int getIntendedLaneId();
+  int getIntendedLaneId();
 
-    void determineNextState(int &egoLaneId, vector<bool> &laneFree, vector<double> &v_lane_m_s, double v_max_m_s);
+  void determineNextState(int &egoLaneId, vector<bool> &laneFree, vector<double> &v_lane_m_s, double v_max_m_s);
 };
 
 #endif //PATH_PLANNING_FSM_H
