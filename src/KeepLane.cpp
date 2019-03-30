@@ -15,4 +15,3 @@ void KeepLane::changeLaneRight(FSM *m, int &currentLaneId) {
     m->setCurrent(new ChangeLaneRight(currentLaneId));
     delete this;
 }
-

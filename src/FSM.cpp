@@ -29,7 +29,7 @@ void FSM::determineNextState(int &egoLaneId, vector<bool> &laneFree, vector<doub
     const bool rightPossible = right < laneFree.size() && laneFree[right];
     const bool leftPossible = left >= 0 && laneFree[left];
 
-    const bool maxSpeed = v_lane_m_s[egoLaneId] == v_max_m_s;
+    const bool egoAtMaxSpeed = v_lane_m_s[egoLaneId] == v_max_m_s;
     const bool leftFasterThanEgo = v_lane_m_s[left] > v_lane_m_s[egoLaneId];
     const bool rightFasterThanEgo = v_lane_m_s[right] > v_lane_m_s[egoLaneId];
 
@@ -38,7 +38,7 @@ void FSM::determineNextState(int &egoLaneId, vector<bool> &laneFree, vector<doub
     bool fastestLaneRight = fastestLane - egoLaneId > 0;
     bool fastestLaneLeft = fastestLane - egoLaneId < 0;
 
-    if (maxSpeed) {
+    if (egoAtMaxSpeed) {
         this->keepLane();
     } else if (fastestLaneRight && rightPossible) {
         this->changeLaneRight(egoLaneId);

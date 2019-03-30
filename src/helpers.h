@@ -1,7 +1,7 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -12,10 +12,10 @@ using std::vector;
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 //   else the empty string "" will be returned.
-string hasData(string s) {
+string hasData(const string &s) {
     auto found_null = s.find("null");
-    auto b1 = s.find_first_of("[");
-    auto b2 = s.find_first_of("}");
+    auto b1 = s.find_first_of('[');
+    auto b2 = s.find_first_of('}');
     if (found_null != string::npos) {
         return "";
     } else if (b1 != string::npos && b2 != string::npos) {
@@ -86,7 +86,7 @@ int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
 vector<double> getFrenet(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y) {
     int next_wp = NextWaypoint(x, y, theta, maps_x, maps_y);
 
-    int prev_wp;
+    long prev_wp;
     prev_wp = next_wp - 1;
     if (next_wp == 0) {
         prev_wp = maps_x.size() - 1;
@@ -134,7 +134,7 @@ getXY(double s, double d, const vector<double> &maps_s, const vector<double> &ma
         ++prev_wp;
     }
 
-    int wp2 = (prev_wp + 1) % maps_x.size();
+    long wp2 = (prev_wp + 1) % maps_x.size();
 
     double heading = atan2((maps_y[wp2] - maps_y[prev_wp]),
                            (maps_x[wp2] - maps_x[prev_wp]));

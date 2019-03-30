@@ -1,10 +1,6 @@
 #include <uWS/uWS.h>
 #include <fstream>
-#include <iostream>
-#include <string>
-#include <vector>
 #include "Eigen-3.3/Eigen/Core"
-#include "Eigen-3.3/Eigen/QR"
 #include "helpers.h"
 #include "json.hpp"
 #include "spline.h"
@@ -58,58 +54,52 @@ int main() {
 
     h.onMessage([&ref_velocity, &fsm, &DELTA_T, &MAX_SPEED, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                         &map_waypoints_dx, &map_waypoints_dy]
-                        (uWS::WebSocket <uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+                        (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
         // "42" at the start of the message means there's a websocket message event.
         // The 4 signifies a websocket message
         // The 2 signifies a websocket event
-        if (length && length > 2 && data[0] == '4' && data[1] == '2') {
+        if (length > 2 && data[0] == '4' && data[1] == '2') {
 
-            auto s = hasData(data);
+            const auto s = hasData(data);
 
-            if (s != "") {
-                auto j = json::parse(s);
+            if (!s.empty()) {
+                const auto j = json::parse(s);
 
-                string event = j[0].get<string>();
+                const string event = j[0].get<string>();
 
                 if (event == "telemetry") {
                     // j[1] is the data JSON object
 
                     // Main car's localization Data
-                    double car_x = j[1]["x"];
-                    double car_y = j[1]["y"];
-                    double car_s = j[1]["s"];
-                    double car_d = j[1]["d"];
-                    double car_yaw = j[1]["yaw"];
-                    double car_speed = j[1]["speed"];
+                    const double car_x = j[1]["x"];
+                    const double car_y = j[1]["y"];
+                    const double car_s = j[1]["s"];
+                    const double car_d = j[1]["d"];
+                    const double car_yaw = j[1]["yaw"];
+                    const double car_speed = j[1]["speed"];
 
                     // Previous path data given to the Planner
-                    auto previous_path_x = j[1]["previous_path_x"];
-                    auto previous_path_y = j[1]["previous_path_y"];
+                    const auto previous_path_x = j[1]["previous_path_x"];
+                    const auto previous_path_y = j[1]["previous_path_y"];
                     // Previous path's end s and d values
-                    double end_path_s = j[1]["end_path_s"];
-                    double end_path_d = j[1]["end_path_d"];
+                    const double end_path_s = j[1]["end_path_s"];
+                    const double end_path_d = j[1]["end_path_d"];
 
                     // Sensor Fusion Data, a list of all other cars on the same side
                     //   of the road.
-                    auto sensor_fusion = j[1]["sensor_fusion"];
+                    const auto sensor_fusion = j[1]["sensor_fusion"];
 
                     json msgJson;
+
                     double ref_yaw = deg2rad(car_yaw);
+                    double ref_s = car_s;
 
                     fsm.keepLane();
-
-                    vector<double> next_x_vals;
-                    vector<double> next_y_vals;
-
-                    /**
-                     * TODO: define a path made up of (x,y) points that the car will visit
-                     *   sequentially every .02 seconds
-                     */
 
                     int prev_size = previous_path_x.size();
 
                     if (prev_size > 0) {
-                        car_s = end_path_s;
+                        ref_s = end_path_s;
                     }
 
                     bool egoLaneBlocked = false;
@@ -120,19 +110,19 @@ int main() {
                     const double MAX_SPEED_M_S = mph2mps(MAX_SPEED);
                     vector<double> laneSpeed_m_s = {MAX_SPEED_M_S, MAX_SPEED_M_S, MAX_SPEED_M_S};
 
-                    for (auto &detected_object : sensor_fusion) {
+                    for (const auto &detected_object : sensor_fusion) {
 
-                        float object_d = detected_object[6];
+                        const float object_d = detected_object[6];
                         const int objectLaneId = getLaneId(object_d);
 
-                        float vx = detected_object[3];
-                        float vy = detected_object[4];
-                        double object_speed_m_s = sqrt(vx * vx + vy * vy);
-                        double object_s = (double) detected_object[5] + prev_size * DELTA_T * object_speed_m_s;
+                        const float vx = detected_object[3];
+                        const float vy = detected_object[4];
+                        const double object_speed_m_s = sqrt(vx * vx + vy * vy);
+                        const double object_s = (double) detected_object[5] + prev_size * DELTA_T * object_speed_m_s;
 
-                        bool isInFront = object_s > car_s;
-                        bool isWithin30Meters = fabs(object_s - car_s) < 30;
-                        bool isWithin50Meters = fabs(object_s - car_s) < 50;
+                        const bool isInFront = object_s > ref_s;
+                        const bool isWithin30Meters = fabs(object_s - ref_s) < 30;
+                        const bool isWithin50Meters = fabs(object_s - ref_s) < 50;
 
                         if (isWithin30Meters) {
                             laneFree[objectLaneId] = false;
@@ -175,11 +165,11 @@ int main() {
 
 
                     double dIntended = dLaneCenter(fsm.getIntendedLaneId());
-                    vector<double> next_wp0 = getXY(car_s + 30, dIntended, map_waypoints_s, map_waypoints_x,
+                    vector<double> next_wp0 = getXY(ref_s + 30, dIntended, map_waypoints_s, map_waypoints_x,
                                                     map_waypoints_y);
-                    vector<double> next_wp1 = getXY(car_s + 60, dIntended, map_waypoints_s, map_waypoints_x,
+                    vector<double> next_wp1 = getXY(ref_s + 60, dIntended, map_waypoints_s, map_waypoints_x,
                                                     map_waypoints_y);
-                    vector<double> next_wp2 = getXY(car_s + 90, dIntended, map_waypoints_s, map_waypoints_x,
+                    vector<double> next_wp2 = getXY(ref_s + 90, dIntended, map_waypoints_s, map_waypoints_x,
                                                     map_waypoints_y);
 
                     ptsx.push_back(next_wp0[0]);
@@ -197,12 +187,6 @@ int main() {
                         ptsy[i] = xy_vehicle[1];
                     }
 
-                    // start with points left from previous path
-                    for (int i = 0; i < previous_path_x.size(); i++) {
-                        next_x_vals.push_back(previous_path_x[i]);
-                        next_y_vals.push_back(previous_path_y[i]);
-                    }
-
                     // create spline
                     tk::spline spl;
                     spl.set_points(ptsx, ptsy);
@@ -211,8 +195,15 @@ int main() {
                     double target_y = spl(target_x);
                     double target_distance = sqrt(target_x * target_x + target_y * target_y);
 
-                    double x_vehicle = 0;
+                    vector<double> next_x_vals;
+                    vector<double> next_y_vals;
+                    // start with points left from previous path
+                    for (int i = 0; i < previous_path_x.size(); i++) {
+                        next_x_vals.push_back(previous_path_x[i]);
+                        next_y_vals.push_back(previous_path_y[i]);
+                    }
                     const double DELTA_VELOCITY = 0.224; // corresponds to acceleration of around 5/m/s/s
+                    double x_vehicle = 0;
                     for (int i = 0; i < 50 - previous_path_x.size(); i++) {
                         const bool too_fast = mph2mps(ref_velocity) > object_speed_blocking;
                         if (egoLaneBlocked && too_fast) {
@@ -220,8 +211,7 @@ int main() {
                         } else if (ref_velocity < MAX_SPEED) {
                             ref_velocity += DELTA_VELOCITY;
                         }
-                        double x_increment = target_x * mph2mps(ref_velocity) * DELTA_T / target_distance;
-                        x_vehicle += x_increment;
+                        x_vehicle += target_x * mph2mps(ref_velocity) * DELTA_T / target_distance;
                         double y_vehicle = spl(x_vehicle);
 
                         vector<double> xy_world = transformVehicle2World(x_vehicle, y_vehicle, ref_yaw, ref_x, ref_y);
@@ -245,11 +235,11 @@ int main() {
         }  // end websocket if
     }); // end h.onMessage
 
-    h.onConnection([&h](uWS::WebSocket <uWS::SERVER> ws, uWS::HttpRequest req) {
+    h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
         std::cout << "Connected!!!" << std::endl;
     });
 
-    h.onDisconnection([&h](uWS::WebSocket <uWS::SERVER> ws, int code, char *message, size_t length) {
+    h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {
         ws.close();
         std::cout << "Disconnected" << std::endl;
     });
